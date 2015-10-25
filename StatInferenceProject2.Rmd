@@ -1,0 +1,214 @@
+---
+title: "Exponential distribution in R and Central Limit Theorem. Comparission"
+author: "Miguel Angel Vallejo Gato"
+date: "25 de octubre de 2015"
+output: pdf_document
+---
+
+\pagebreak  
+\tableofcontents
+\pagebreak  
+
+#1.  Overview
+
+In this project we're going to analyze the ToothGrowth data in the R datasets package.
+
+We will: 
+
+1. Perform some basic exploratory data analyses.  
+
+2. Provide a basic summary of the data  
+
+3. Use confidence intervals and/or hypothesis test to compare tooth growth by supp and dose.
+
+
+#2. The dataset ToothGrowth
+
+This dataset show the effect of vitamin C on tooth growth in guinea pigs.
+
+* Description:
+
+The response is the length of odontoblasts (cells responsible for tooth growth) in 60 guinea pigs. Each animal received one of three dose levels of vitamin C (0.5, 1, and 2 mg/day) by one of two delivery methods, (orange juice or ascorbic acid (a form of vitamin C and coded as VC).
+
+* Format
+
+A data frame with 60 observations on 3 variables.
+
+[,1]	len	numeric	Tooth length  
+
+[,2]	supp	factor	Supplement type (VC or OJ)  
+
+[,3]	dose	numeric	Dose in milligrams/day
+
+* Source
+
+C. I. Bliss (1952) The Statistics of Bioassay. Academic Press.
+
+\pagebreak 
+
+#3. Exploratory data analysis
+
+First we are going to load the dataset and the necessary libraries.
+```{r,message=FALSE,warning=FALSE,results='hide'}
+library(dplyr)
+data(ToothGrowth)
+dataset <- ToothGrowth 
+```
+
+Now, we are going to do a basic analisis of the data.
+
+1. Structure of the dataset
+```{r}
+str(dataset)
+```
+2. Summary
+```{r}
+summary(dataset)
+```
+
+3. First 3 rows of the dataset
+```{r}
+head(dataset,3)
+```
+
+4. Last 3 rows of the dataset
+
+```{r}
+tail(dataset,3)
+```
+
+\pagebreak 
+
+5. Summary of each pair supp-dose.
+
+```{r}
+summary(filter(dataset,supp=="OJ",dose==0.5))
+summary(filter(dataset,supp=="VC",dose==0.5))
+```
+
+\pagebreak 
+
+```{r}
+summary(filter(dataset,supp=="OJ",dose==1.0))
+summary(filter(dataset,supp=="VC",dose==1.0))
+```
+
+\pagebreak 
+
+```{r}
+summary(filter(dataset,supp=="OJ",dose==2.0))
+summary(filter(dataset,supp=="VC",dose==2.0))
+```
+
+\pagebreak 
+
+6. Plot  showing lenght vs dose given the type of supplement.
+
+```{r}
+coplot(len ~ dose | supp, data = dataset, panel = panel.smooth,
+       xlab = "ToothGrowth data: length vs dose, given type of supplement")
+```
+
+\pagebreak 
+
+#4. Tests
+
+##1. Summary
+
+Since we only have 30 obserbations, The stimations could not be so accurate to represent the entire population, so we are going to perform some tests.
+
+We are going to use t.test in various subsets of the data to calculate the confidence interval and the p-value.
+
+##2. Assumptions
+
+We will assume that:
+* Independence of the observations.
+* The distribution is nearly normal.
+
+\pagebreak 
+
+##3. Supp influence in lenght
+
+Null Hypothesis:
+Changing the supp does not affect the lenght.
+
+Test:
+```{r}
+test1 <- t.test(len~supp,dataset,var.equal = FALSE)
+```
+
+P-Value:
+```{r}
+test1$p.value
+```
+Confidence interval:
+```{r}
+test1$conf.int[1:2]
+```
+
+Since the confidence interval contains zero and p-value>0.05, we can't reject the null hypothesis.
+
+\pagebreak 
+
+##4. Supp influence in lenght given a Dose level.
+
+Null Hypothesis:
+Changing the supp does not affect the lenght given a dose level.
+
+Test:
+```{r}
+# We make a test with each dose level
+test1 <- t.test(len~supp,filter(dataset,dose==0.5),var.equal = FALSE)
+test2 <- t.test(len~supp,filter(dataset,dose==1.0),var.equal = FALSE)
+test3 <- t.test(len~supp,filter(dataset,dose==2.0),var.equal = FALSE)
+```
+
+P-Value:
+```{r}
+test1$p.value
+test2$p.value
+test3$p.value
+```
+Confidence interval:
+```{r}
+test1$conf.int[1:2]
+test2$conf.int[1:2]
+test3$conf.int[1:2]
+```
+
+As we can see, we can reject the hyphotesis in the 2 first cases but not in the third case.
+
+\pagebreak 
+
+##5. Dose influence in lenght
+
+Null Hypothesis:
+Changing the dose does not affect the lenght.
+
+Test:
+```{r}
+#test with dose==0.5 or dose==1.0
+test1 <- t.test(len~dose,filter(dataset,!dose==2.0),var.equal = FALSE)
+#test with dose==1.0 or dose==2.0
+test2 <- t.test(len~dose,filter(dataset,!dose==2.0),var.equal = FALSE)
+```
+
+P-Value:
+```{r}
+test1$p.value
+test2$p.value
+```
+Confidence interval:
+```{r}
+test1$conf.int[1:2]
+test2$conf.int[1:2]
+```
+
+In both cases, the confidence intervale don't cotains zero and the p-value is smaller than 0.05 so we can reject the null hyphotesis.
+
+#5 Conclusions
+
+1. The supplement type alone doesn't affect the lenght.
+2. The supplement type given a dose level affect the lenght if the dose level is 0.5 or 1.0
+but don't affect the lenght if the dose level is 2.0. 
+3. The dose affects the lenght.
